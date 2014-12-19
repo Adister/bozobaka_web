@@ -17,4 +17,7 @@ urlpatterns = patterns('',
 
     # Homepage
     url(r'^$', 'bozobaka.views.home', name='home'),
+
+    # URL to log user data sent by phone into DB
+    url(r'^loguser/', 'users.views.validate_request'),
 )
