@@ -4,6 +4,10 @@ from django.conf.urls import patterns, include, url
 from django.contrib import admin
 admin.autodiscover()
 
+from bozobaka.views import home
+from qrcodes.views import log_order, log_rating, log_new_qr
+from users.views import validate_request
+ 
 urlpatterns = patterns('',
     # Examples:
     # url(r'^$', 'bozobaka.views.home', name='home'),
@@ -16,11 +20,17 @@ urlpatterns = patterns('',
     url(r'^admin/', include(admin.site.urls)),
 
     # Homepage
-    url(r'^$', 'bozobaka.views.home', name='home'),
+    url(r'^$', home),
 
     # URL to log user data sent by phone into DB
-    url(r'^loguser/', 'users.views.validate_request'),
+    url(r'^loguser', validate_request),
 
     # URL for scanned code logging
-    url(r'^code', 'qrcodes.views.log_new_qr'),
+    url(r'^code', log_new_qr),
+
+    # URL for logging the rating sent
+    url(r'^rating', log_rating),
+
+    # URL for logging the order type event
+    url(r'^order', log_order),
 )

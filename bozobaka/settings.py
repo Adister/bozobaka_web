@@ -88,9 +88,6 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 # Template location
-TEMPLATE_DIRS = (
-                 os.path.join(BASE_DIR, "static", "templates"),
-)
 
 if DEBUG:
     MEDIA_URL = '/media/'
@@ -99,3 +96,9 @@ if DEBUG:
     STATICFILES_DIRS = (
         os.path.join(BASE_DIR, "static", "static"),
         )
+    TEMPLATE_DIRS = (
+        os.path.join(BASE_DIR, "static", "templates"),
+        )
+
+#############################
+                     

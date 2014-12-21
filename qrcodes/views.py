@@ -99,6 +99,7 @@ def log_new_qr(request):
                         for data in key_value_ptr.iterator():
                             response_data[data.key] = data.value
 
+                        response_data['usage_id'] = usage_ptr.id
                         return response('success','Recieve type 3 key value pairs')
 
                 elif type == '4':
@@ -113,6 +114,7 @@ def log_new_qr(request):
                         for data in key_value_ptr.iterator():
                             response_data[data.key] = data.value
 
+                        response_data['usage_id'] = usage_ptr.id
                         return response('success','Recieve type 4 key value pairs')
                 else:
                     ## got invalid type. return error
@@ -121,6 +123,92 @@ def log_new_qr(request):
     else:
         ## IMP parameters not present
         ## Return error
+        return response('error', 'Required parameters not present')        
 
-        response_data['message'] = 'Required parameters not present'
-        return HttpResponse(json.dumps(response_data), content_type="application/json")
+@csrf_exempt
+def log_rating(request):
+
+    if request.method != 'POST':
+        # Got a GET request. INVALID
+        return response('error','POST method only')
+
+    if 'usage_id' in request.POST and 'key' in request.POST and 'rating_key' in request.POST and 'qr_code_id' in request.POST:
+        
+        user_qr_code_id = request.POST.get('qr_code_id','')
+        user_usage_id = request.POST.get('usage_id','')
+        user_key = request.POST.get('key','')
+        user_rating_key = request.POST.get('rating_key','')
+
+        if user_key != 'adister@123':
+            return response('error', 'INVALID KEY')
+
+        if user_rating_key and user_usage_id and user_qr_code_id:
+            try:
+                usage_ptr = usage.objects.get(id=user_usage_id)
+                qr_code_ptr = qr_code.objects.get(id=user_qr_code_id)
+                key_value_ptr = key_value.objects.get(id=user_rating_key)
+            except:
+                return response('error', 'invalid parameter values')
+            else:
+                rating_ptr = ratings.objects.create(usage_id=usage_ptr, key_value_id=key_value_ptr)
+
+                return response('success', qr_code_ptr.response_text)
+
+        else:
+            ## Empty parameter values
+            return response('error', 'Empty parameter values')
+    else:
+        ## IMP parameters not present
+        return response('error', 'Required paramters not present')
+
+@csrf_exempt
+def log_order(request):
+
+    if request.method != 'POST':
+        # Got a GET request. INVALID
+        return response('error','POST method only')
+
+    if 'usage_id' in request.POST and 'key' in request.POST and 'rating_key' in request.POST and 'order_value' in request.POST and 'qr_code_id' in request.POST:
+        
+        user_qr_code_id = request.POST.get('qr_code_id','')
+        user_usage_id = request.POST.get('usage_id','')
+        user_key = request.POST.get('key','')
+        user_rating_key = request.POST.get('rating_key','')
+        user_order_value = request.POST.get('order_value','')
+
+        user_rating_key = user_rating_key.split('-')
+        user_order_value = user_order_value.split('-')
+
+        if len(user_order_value) != len(user_rating_key):
+            return response('error', 'INVALID rating key')
+
+        if user_key != 'adister@123':
+            return response('error', 'INVALID KEY')
+
+        if user_rating_key and user_usage_id and user_qr_code_id and user_order_value:
+            try:
+                usage_ptr = usage.objects.get(id=user_usage_id)
+                qr_code_ptr = qr_code.objects.get(id=user_qr_code_id)
+                
+            except usage.DoesNotExist or qr_code.DoesNotExist:
+                return response('error', 'invalid parameter values')
+            else:
+
+                i = 0
+                while i<len(user_rating_key):
+                    try:
+                        key_value_ptr = key_value.objects.get(id=int(user_rating_key[i]))
+                    except key_value.DoesNotExist:
+                        return response('error', 'INVALID values sent')
+                    else:
+                        order_ptr = ordering.objects.create(usage_id=usage_ptr, key_value_id=key_value_ptr, quantity=int(user_order_value[i]))
+                    i += 1
+
+                return response('success', qr_code_ptr.response_text)
+
+        else:
+            ## Empty parameter values
+            return response('error', 'Empty parameter values')
+    else:
+        ## IMP parameters not present
+        return response('error', 'Required paramters not present')
