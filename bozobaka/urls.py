@@ -20,4 +20,7 @@ urlpatterns = patterns('',
 
     # URL to log user data sent by phone into DB
     url(r'^loguser/', 'users.views.validate_request'),
+
+    # URL for scanned code logging
+    url(r'^code', 'qrcodes.views.log_new_qr'),
 )

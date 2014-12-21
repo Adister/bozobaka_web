@@ -1,3 +1,6 @@
 from django.contrib import admin
 
-# Register your models here.
+from publisher.models import publishers
+
+admin.site.register(publishers)
+
