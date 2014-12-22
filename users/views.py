@@ -1,11 +1,12 @@
 from django.shortcuts import render
-from django.http import Http404, HttpRequest, HttpResponse, HttpResponseRedirect
+from django.http import Http404, HttpRequest, HttpResponse, HttpResponseRedirect, HttpResponseNotFound
 from django.views.decorators.csrf import csrf_exempt
 
 import json
 import datetime
 
 from users.models import fb_users, gplus_users, users
+from qrcodes.views import response
 
 # Global variables
 response_data = {}
@@ -17,8 +18,8 @@ def validate_request(request):
 
     if request.method != 'POST':
         # Got a GET request. INVALID
-        response_data['message'] = 'POST method only'
-        return HttpResponse(json.dumps(response_data), content_type="application/json")
+        #return response('error', 'POST method only')
+        return HttpResponseNotFound('<h1>Page not found</h1>')
     
     if 'type' in request.POST and 'user_id' in request.POST and 'key' in request.POST:
         
@@ -27,9 +28,7 @@ def validate_request(request):
         key = request.POST.get('key', '')
 
         if not type or not user_id or not key:
-            
-            response_data['message'] = 'type or user_id or key cannot be empty'
-            return HttpResponse(json.dumps(response_data), content_type="application/json")
+            return response('error', 'type or user_id or key cannot be empty')            
         else:
             # type and user_id and key parameter present in POST request
             # detect the type i.e. fb or gplus
@@ -37,8 +36,7 @@ def validate_request(request):
             # validate id key is correct
             # Process further for correct key only
             if key != 'adister@123':
-                response_data['message'] = 'INVALID key'
-                return HttpResponse(json.dumps(response_data), content_type="application/json")
+                return response('error', 'INVALID key')                            
 
             user_fb_id = ''
             user_gplus_id = ''
@@ -61,15 +59,6 @@ def validate_request(request):
                 try:
                     p = fb_users.objects.get(user_id = user_fb_id)
 
-                    ## Already registered user
-                    ## Search for the fb_id in users table and return its primary key
-                    p = users.objects.get(fb_id=user_fb_id)
-
-                    response_data['key'] = p.id
-                    response_data['message'] = 'success'
-
-                    return HttpResponse(json.dumps(response_data), content_type="application/json")
-
                 except fb_users.DoesNotExist:
                     ## New user
                     ## Log him into the fb_users table and then users table
@@ -81,34 +70,35 @@ def validate_request(request):
                         try:
                             u = users.objects.get(email=primary_email)
 
-                            response_data['key'] = u.id
-                            response_data['message'] = 'success'
-
-                            ## User with the given email present already.
-                            ## He previously registered through gplus. Update the fb id for him and return primary_key
-                            users.objects.filter(email=primary_email).update(fb_id=user_fb_id)
-
-                            return HttpResponse(json.dumps(response_data), content_type="application/json")
-
                         except users.DoesNotExist:
-                            ## User with given email not present ie.e a completely new user
+                            ## User with given email not present i.e. a completely new user
                             ## Log him into the users table and return the primary key
 
                             u = users.objects.create(email=primary_email, date_added=datetime.datetime.now(), fb_id=user_fb_id, gplus_id=user_gplus_id)
+                            return response(str(u.id), 'New fb user with primary email added to users')
 
-                            response_data['key'] = u.id
-                            response_data['message'] = 'success'
+                        else:
+                            ## User with the given email present already.
 
-                            return HttpResponse(json.dumps(response_data), content_type="application/json")
+                            if not u.fb_id:
+                                ## He previously registered through gplus. Update the fb id for him and return primary_key
+                                users.objects.filter(email=primary_email).update(fb_id=user_fb_id)
+                                return response(str(u.id), 'Updated the fb ID for the user')
+                            else:
+                                ## Already linked both fb and gplus
+                                return response(str(u.id), 'Previously linked fb and gplus')
                     else:
                         ## we got an empty email address. 
                         ## We have not option but to log into and return the primary_key
-                        u = users.objects.create(email=primary_email, date_added=datetime.datetime.now(), fb_id=user_fb_id, gplus_id=user_gplus_id)
+                        temp_var = user_fb_id + '@facebook.com'
+                        u = users.objects.create(email=temp_var, date_added=datetime.datetime.now(), fb_id=user_fb_id, gplus_id=user_gplus_id)
 
-                        response_data['key'] = u.id
-                        response_data['message'] = 'success'
-
-                        return HttpResponse(json.dumps(response_data), content_type="application/json")
+                        return response(str(u.id), 'added fb user with facebook email')
+                else:
+                    ## Already registered user
+                    ## Search for the fb_id in users table and return its primary key
+                    p_n = users.objects.get(fb_id=user_fb_id)
+                    return response(str(p_n.id), 'Already registered fb user')
 
             elif type == 'gplus':
                 user_gplus_id = request.POST.get('user_id', '')
@@ -116,15 +106,6 @@ def validate_request(request):
                 ## Check if the current user is already present in our db
                 try:
                     p = gplus_users.objects.get(user_id = user_gplus_id)
-
-                    ## Already registered user
-                    ## Search for the gplusid in users table and return its primary key
-                    p = users.objects.get(gplus_id=user_gplus_id)
-
-                    response_data['key'] = p.id
-                    response_data['message'] = 'success'
-
-                    return HttpResponse(json.dumps(response_data), content_type="application/json")
 
                 except gplus_users.DoesNotExist:
                     ## New user
@@ -137,50 +118,44 @@ def validate_request(request):
                         try:
                             u = users.objects.get(email=primary_email)
 
-                            response_data['key'] = u.id
-                            response_data['message'] = 'updated users'
-
-                            ## User with the given email present already.
-                            ## He previously registered through fb. Update the gplus_id for him and return primary_key
-                            users.objects.filter(email=primary_email).update(gplus_id=user_gplus_id)
-
-                            return HttpResponse(json.dumps(response_data), content_type="application/json")
-
                         except users.DoesNotExist:
-                            ## User with given email not present ie.e a completely new user
+                            ## User with given email not present i.e. a completely new user
                             ## Log him into the users table and return the primary key
 
                             u = users.objects.create(email=primary_email, date_added=datetime.datetime.now(), fb_id=user_fb_id, gplus_id=user_gplus_id)
+                            
+                            return response(str(u.id), 'added new user to users')
 
-                            response_data['key'] = u.id
-                            response_data['message'] = 'created in users'
-
-                            return HttpResponse(json.dumps(response_data), content_type="application/json")
+                        else:
+                            ## User with the given email present already.
+                            ## He previously registered through fb. Update the gplus_id for him and return primary_key
+                            if not u.gplus_id:
+                                users.objects.filter(email=primary_email).update(gplus_id=user_gplus_id)
+                                return response(str(u.id), 'updated gplus id in users for already registered fb user')
+                            else:
+                                return response(str(u.id), 'Already linked gplus and fb account')
                     else:
                         ## we got an empty email address. 
                         ## We have not option but to log into and return the primary_key
-                        try:
-                            u = users.objects.create(email=primary_email, date_added=datetime.datetime.now(), fb_id=user_fb_id, gplus_id=user_gplus_id)
-                        except:
-                            response_data['key'] = 'duplicate'
-                            response_data['message'] = 'created empty email in users'
+                        u = users.objects.create(email=user_gplus_id, date_added=datetime.datetime.now(), fb_id=user_fb_id, gplus_id=user_gplus_id)
 
-                            return HttpResponse(json.dumps(response_data), content_type="application/json")
-
-                        response_data['key'] = u.id
-                        response_data['message'] = 'success'
-
-                        return HttpResponse(json.dumps(response_data), content_type="application/json")
-
+                        return response(str(u.id), 'added gplus user with gplus id')
+                else:
+                    ## Already registered user
+                    ## Search for the gplusid in users table and return its primary key
+                    try:
+                        p_n = users.objects.get(gplus_id=user_gplus_id)
+                    except users.DoesNotExist:
+                        return response('error', 'type of error should not occur')
+                    else:
+                        return response(str(p_n.id), 'Already registered gplus user')
 
             else:
-                response_data['message'] = 'INVALID type'
-                return HttpResponse(json.dumps(response_data), content_type="application/json")
+                return response('error', 'INVALID type')
+                
     else:
         # type or user_id or key not present in POST request
         # cannot process this, return error
-
-        response_data['message'] = 'fatal error'
-        return HttpResponse(json.dumps(response_data), content_type="application/json")
+        return response('error', 'fatal error')        
             
     
