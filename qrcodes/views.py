@@ -96,7 +96,7 @@ def log_new_qr(request):
                     except key_value.DoesNotExist:
                         return response('error','No such qrcode')
                     else:
-                        response_date.clear()
+                        response_data.clear()
                         ## fetched the key_value pairs. Return it in json
                         for data in key_value_ptr.iterator():
                             response_data[data.key] = data.value
@@ -112,7 +112,7 @@ def log_new_qr(request):
                     except key_value.DoesNotExist:
                         return response('error','No such qrcode')
                     else:
-                        response_date.clear()
+                        response_data.clear()
                         ## fetched the key_value pairs. Return it in json
                         for data in key_value_ptr.iterator():
                             response_data[data.key] = data.value
