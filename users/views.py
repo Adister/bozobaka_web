@@ -156,6 +156,4 @@ def validate_request(request):
     else:
         # type or user_id or key not present in POST request
         # cannot process this, return error
-        return response('error', 'fatal error')        
-            
-    
+        return response('error', 'fatal error')

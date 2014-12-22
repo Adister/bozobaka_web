@@ -3,7 +3,7 @@ from django.db import models
 class gplus_users(models.Model):
 
     id = models.AutoField(primary_key=True)
-    user_id = models.CharField(unique=True, max_length=20, blank=False, null=False)
+    user_id = models.CharField(unique=True, max_length=100, blank=False, null=False)
     email = models.EmailField(max_length=254, null=True)
     secondary_email = models.EmailField(max_length=254, null=True, blank=True)
     name = models.CharField(max_length=100, null=True, blank=False)
@@ -18,7 +18,7 @@ class gplus_users(models.Model):
     date_added = models.DateTimeField(auto_now_add=True)
 
     def __unicode__(self):
-        return self.user_id
+        return self.email + " " + self.name
 
 class fb_users(models.Model):
 
@@ -38,7 +38,7 @@ class fb_users(models.Model):
     date_added = models.DateTimeField(auto_now_add=True)
     
     def __unicode__(self):
-        return self.user_id
+        return self.email + " " + self.name
 
 class users(models.Model):
     id = models.AutoField(primary_key=True)
