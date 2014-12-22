@@ -9,12 +9,13 @@ import time
 from qrcodes.models import qr_code, usage, download, key_value, ordering, ratings, differnt_use
 from users.models import users
 
-# Global variables
 response_data = {}
-response_data['key'] = 'error'
-response_data['message'] = ''
 
-def response(key,msg):
+def response(key,msg,opt=0):
+
+    if opt == 0:
+        response_data.clear()
+
     response_data['key'] = key
     response_data['message'] = msg
 
@@ -95,12 +96,13 @@ def log_new_qr(request):
                     except key_value.DoesNotExist:
                         return response('error','No such qrcode')
                     else:
+                        response_date.clear()
                         ## fetched the key_value pairs. Return it in json
                         for data in key_value_ptr.iterator():
                             response_data[data.key] = data.value
 
                         response_data['usage_id'] = usage_ptr.id
-                        return response('success','Recieve type 3 key value pairs')
+                        return response('success','Recieve type 3 key value pairs',1)
 
                 elif type == '4':
                     ## '4' means ordering type. required input from user
@@ -110,12 +112,13 @@ def log_new_qr(request):
                     except key_value.DoesNotExist:
                         return response('error','No such qrcode')
                     else:
+                        response_date.clear()
                         ## fetched the key_value pairs. Return it in json
                         for data in key_value_ptr.iterator():
                             response_data[data.key] = data.value
 
                         response_data['usage_id'] = usage_ptr.id
-                        return response('success','Recieve type 4 key value pairs')
+                        return response('success','Recieve type 4 key value pairs',1)
                 else:
                     ## got invalid type. return error
                     return response('error', 'Invalid type')
