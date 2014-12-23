@@ -74,8 +74,8 @@ def validate_request(request):
                             ## User with given email not present i.e. a completely new user
                             ## Log him into the users table and return the primary key
 
-                            u = users.objects.create(email=primary_email, date_added=datetime.datetime.now(), fb_id=user_fb_id, gplus_id=user_gplus_id)
-                            return response(str(u.id), 'New fb user with primary email added to users')
+                            u_n = users.objects.create(email=primary_email, date_added=datetime.datetime.now(), fb_id=user_fb_id, gplus_id=user_gplus_id)
+                            return response(str(u_n.id), 'New fb user with primary email added to users')
 
                         else:
                             ## User with the given email present already.
@@ -89,16 +89,28 @@ def validate_request(request):
                                 return response(str(u.id), 'Previously linked fb and gplus')
                     else:
                         ## we got an empty email address. 
-                        ## We have not option but to log into and return the primary_key
-                        temp_var = user_fb_id + '@facebook.com'
-                        u = users.objects.create(email=temp_var, date_added=datetime.datetime.now(), fb_id=user_fb_id, gplus_id=user_gplus_id)
-
-                        return response(str(u.id), 'added fb user with facebook email')
+                        ## We have no option but to log him into db and return the primary_key
+                        temp_var = user_fb_id
+                        try:
+                            u = users.objects.get(fb_id=user_fb_id)
+                        except users.DoesNotExist:
+                            u_n = users.objects.create(email=temp_var, date_added=datetime.datetime.now(), fb_id=user_fb_id, gplus_id=user_gplus_id)
+                            return response(str(u_n.id), 'added fb user with facebook email')
+                        else:
+                            return response(str(u.id), 'added fb user with facebook email')
                 else:
                     ## Already registered user
                     ## Search for the fb_id in users table and return its primary key
-                    p_n = users.objects.get(fb_id=user_fb_id)
-                    return response(str(p_n.id), 'Already registered fb user')
+                    try:
+                        p_n = users.objects.get(fb_id=user_fb_id)
+                    except users.DoesNotExist:
+                        temp_var = primary_email
+                        if not primary_email:
+                            temp_var = user_fb_id
+                        pp = users.objects.create(email=temp_var, date_added=datetime.datetime.now(), fb_id=user_fb_id, gplus_id=user_gplus_id)
+                        return response(str(pp.id), 'this should not have occured yet problem resolved')
+                    else:
+                        return response(str(p_n.id), 'Already registered fb user')
 
             elif type == 'gplus':
                 user_gplus_id = request.POST.get('user_id', '')
@@ -136,17 +148,22 @@ def validate_request(request):
                                 return response(str(u.id), 'Already linked gplus and fb account')
                     else:
                         ## we got an empty email address. 
-                        ## We have not option but to log into and return the primary_key
-                        u = users.objects.create(email=user_gplus_id, date_added=datetime.datetime.now(), fb_id=user_fb_id, gplus_id=user_gplus_id)
-
-                        return response(str(u.id), 'added gplus user with gplus id')
+                        ## We have no option but to log into db and return the primary_key
+                        try:
+                            u = users.objects.get(gplus_id=user_gplus_id)
+                        except users.DoesNotExist:
+                            u_n = users.objects.create(email=user_gplus_id, date_added=datetime.datetime.now(), fb_id=user_fb_id, gplus_id=user_gplus_id)
+                            return response(str(u.id), 'added gplus user with gplus id')
+                        else:
+                            return response(str(u_n.id), 'added gplus user with gplus id')
                 else:
                     ## Already registered user
                     ## Search for the gplusid in users table and return its primary key
                     try:
                         p_n = users.objects.get(gplus_id=user_gplus_id)
                     except users.DoesNotExist:
-                        return response('error', 'type of error should not occur')
+                        u_n = users.objects.create(email=primary_email, date_added=datetime.datetime.now(), fb_id=user_fb_id, gplus_id=user_gplus_id)
+                        return response(str(u_n.id), 'this should not have occured yet problem resolved')
                     else:
                         return response(str(p_n.id), 'Already registered gplus user')
 
